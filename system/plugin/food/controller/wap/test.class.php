@@ -59,7 +59,9 @@ class test extends plugin
 	public function weixing()
 	{
 		//http://dc.com/?m=plugin&p=wap&cn=test&id=food:sit:weixin
-
+        if ($_GET['openid']) {
+        	echo $_GET['openid'];
+        }
 
 		if(!$_GET['userinfo']){
 			$url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
