@@ -44,6 +44,131 @@
     }
 
     }
+     public function do_send_goods()
+    {
+      //出单
+      if(IS_POST)
+      {
+        $data=$this->clear_html($_POST);
+        // $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
+        //  $this->dexit(array('error'=>1,'msg'=>$data2));
+        //更改订单商品表状态
+        $data1=model('food_order_goods')->data(array('status'=>2))->where(array('id'=>$data['eid']))->save();
+        $data2=model('food_order')->where(array('id'=>$data['order_id']))->find();
+
+        //订单表状态改为已接单
+        if($data1)
+        {
+          if($data2['goods_num']==1)
+          {
+            //更改订单表状态
+            $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
+          }else
+          {
+            //商品数量大于2时，循环遍历所有的商品订单表 状态全部为2的更改订单表
+            $data3=model('food_order_goods')->where(array('order_id'=>$data['order_id'],'status'=>2))->count();
+            // $this->dexit(array('error'=>1,'msg'=>$data3));
+            if($data3==$data2['goods_num'])
+            {
+              //更改订单表状态
+              $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
+            }
+          }
+        }
+
+        if($data1)
+        {
+
+            $this->dexit(array('error'=>0,'msg'=>'出单成功'));
+        }else
+        {
+            $this->dexit(array('error'=>1,'msg'=>'出单失败，请稍后再试'));
+        }
+      }
+
+    }
+    public function receive()
+    {
+      if(IS_POST)
+      {
+        $data=$this->clear_html($_POST);
+        // $this->dexit(array('error'=>1,'msg'=>$data['eid']));
+        //更改订单商品表状态
+        $data1=model('food_order_goods')->data(array('status'=>1))->where(array('id'=>$data['eid']))->save();
+        //订单表状态改为已接单
+        $data2=model('food_order')->data(array('print_status'=>2))->where(array('id'=>$data['order_id']))->save();
+        if($data1)
+        {
+
+            $this->dexit(array('error'=>0,'msg'=>'接单成功'));
+        }else
+        {
+            $this->dexit(array('error'=>1,'msg'=>'接单失败，请稍后再试'));
+        }
+      }
+    }
+    public function do_entrance_cook()
+    {
+       $role_id=$_SESSION['employee']['role_id'];
+       $data=model('store_role')->field('cat_id')->where(array('id'=>$role_id))->find();
+       $cat_id=explode(',', $data['cat_id']);
+       // dump($cat_id);
+       // die;
+        //dump($data);
+        $data1=model('food_order')->query('select * from hd_food_order where status=2 and print_status in(0,1,2)');
+        // where(array('status'=>2,'print_status'=>0))->select();
+        foreach($data1 as $v)
+        {
+          $data1['test'][]=model('food_order_goods')->query('select a.*,b.goods_name,b.cat_id,b.goods_img from hd_food_order_goods as a  left join hd_food_goods as b on a.goods_id=b.id where a.order_id='.$v['id']);
+        }
+        $data2=[];
+        foreach($data1['test'] as $v)
+        {
+            foreach($v  as $k => $v1)
+            {
+                if(in_array($v1['cat_id'],$cat_id))
+                {
+                    $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
+                }
+            }
+        }
+             // $goods_id=implode(',',$data2);
+        dump($data2);
+       $this->displays('do_entrance_cook',array('data2'=>$data2));
+    }
+    public function do_ntrance()
+    {
+       $_count=model('store_role')->where(array('store_id'=>$this->mid))->count();
+      require_once(UPLOAD_PATH.'common_page.class.php');
+      $p = new Page($_count, 10);
+      $pagebar = $p->show(10);
+        $role = model('store_role')->where(array('store_id'=>$this->mid))->limit($p->firstRow,$p->listRows)->select();
+        $this->displays('ntrance',array('role'=>$role,'pagebar'=>$pagebar));
+    }
+    public function edit_cat_id()
+    {
+      //分配商品分类权限
+      $role_id=$this->clear_html($_GET);
+      // var_dump($eid['employee_id']);
+      // die;
+      $data=model('food_cat')->where(array('shop_id'=>$this->mid))->select();
+
+      if(IS_POST)
+      {
+
+        $data=$this->clear_html($_POST);
+
+        $data1=model('store_role')->data(array('cat_id'=>$data['cat_id']))->where(array('id'=>$data['role_id']))->save();
+        if($data1)
+        {
+          $this->dexit(array('error'=>0,'msg'=>'操作成功'));
+        }else
+        {
+          $this->dexit(array('error'=>1,'msg'=>'操作失败'));
+        }
+      }
+      $this->displays('edit_cat_id',array('data'=>$data,'role_id'=>$role_id['role_id']));
+    }
     public function do_order_paid()
     {
       $data=model('food_order')->query('select a.*,b.title from hd_food_order as a left join hd_food_shop_tables as b on a.table_id=b.id where a.shop_id='.$this->mid.' and a.status=3');
@@ -557,7 +682,7 @@
             $shop = model('shop')->where(array('id'=>$this->mid))->find();
             $data['company_id'] = $shop['company_id'];
             $uid = uc_user_register1($data['username'], $password, $data['email']);
-            if($uid > 1){  
+            if($uid > 1){
                 $data['uid'] = $uid;
                 if (model('employee')->data($data)->add()) {
                     $this->dexit(array('error'=>0,'msg'=>'添加成功'));
