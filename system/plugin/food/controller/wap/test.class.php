@@ -55,4 +55,6 @@ class test extends plugin
 		 $user = uc_user_login_openid($data['openid']);
 		 dump($user);
 	}
+
+	
 }
