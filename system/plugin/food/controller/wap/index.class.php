@@ -48,7 +48,7 @@ class index extends plugin
 
         }
 
-        // dump($_SESSION);
+         dump($_SESSION);
        /* if ($_SESSION['uid']) {
            $this->uid = $_SESSION['uid'];
         }*/
@@ -61,6 +61,16 @@ class index extends plugin
         //     echo "<script>alert('没有获取到桌号，请稍后再试');history.go(-1);</script>";
         //     die;
         // }
+    }
+    public function choose_table()
+    {
+        $data=$this->clear_html($_GET);
+        //手机端选桌子页面
+        $data1=model('food_shop_tables')->where(array('status'=>0,'shop_id'=>$data['shop_id']))->select();
+        // dump($data1);
+        // die;
+        $this->assign(array('data1'=>$data1));
+        $this->display('choose_table');
     }
     public function all_order()
     {
@@ -392,36 +402,40 @@ class index extends plugin
 
          if(!$this->eid){
             if(!$_SESSION['userinfo'] || !$this->uid){
-                $wx_user['appid'] = 'wxcf1349c1fd949597';
-                $wx_user['appSecret'] = '0d5e3d5ee7955e524088291d4fbe7546';
                 $url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-                require_once(UPLOAD_PATH.'WxUserinfo.class.php');
-                $wxCardPack = new Wxcard($wx_user);
+                $appid = 'LB06yeov34iw1vs9lo';
+                if(empty($_GET['userinfo'])){
 
-                if (!$_SESSION['openid']) {
-                    $openids = $wxCardPack->one_openid($url);
-                    $_SESSION['openid'] = $openids['openid'];
-                    $openid = $_SESSION['openid'];
-                }else{
-                    $openid = $_SESSION['openid'];
-                }
-                $user = uc_user_login_openid($openid);
-                if($user){
-                    $_SESSION['userinfo']['uid'] = $user['uid'];
-                    $_SESSION['userinfo']['openid'] = $user['openid'];
-                }
-
-                if(!$user){
-                    $userinfo = $wxCardPack->auth_openid($url);
-                    if($userinfo['nickname']){
-                        $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
+                    if (isset($_GET['openid'])) {
+                        $user = uc_user_login_openid($_GET['openid']);
+                        if($user){
+                            $_SESSION['userinfo']['uid'] = $user['uid'];
+                            $_SESSION['userinfo']['openid'] = $user['openid'];
+                        }
+                    }else{
+                            $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?appid_api='.$appid.'&redirect='.urlencode($url);
+                            header('Location: ' . $oaut_url);exit;
                     }
-                    if($id > 0){
-                        $_SESSION['userinfo']['uid'] = $id;
-                        $_SESSION['userinfo']['openid'] = $userinfo['openid'];
-                    }
-
                 }
+
+                if (!$user) {
+                    if(!$_GET['userinfo']){
+                        $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
+                        header('Location: ' . $oaut_url);exit;
+
+                    }else{
+                       $userinfo = json_decode(base64_decode($_GET['userinfo']), true);
+                       if($userinfo['nickname']){
+                            $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
+                            if ($id > 0) {
+                                $_SESSION['userinfo']['uid'] = $id;
+                                $_SESSION['userinfo']['openid'] = $userinfo['openid'];
+                            }
+                        }
+                    }
+                    
+                }
+                dump($_SEEEION);
             }
         }
 
@@ -619,7 +633,7 @@ class index extends plugin
                         $a  = $b;
                         $id = $v[id];
                     }
-                      
+
                 }
             }
             $data['queue_id'] = $id;
@@ -634,10 +648,10 @@ class index extends plugin
             $num = model('food_queue_buyer')->data($data)->add();
             if ($num) {
                 $this->dexit(array('error'=>0,'msg'=>'你已经排号成功。。'));
-              
+
             }else{
                 $this->dexit(array('error'=>1,'msg'=>'你排号失败。。'));
-            
+
             }
         }
         $this->display('queue_buyer');
@@ -663,14 +677,14 @@ class index extends plugin
     {
         $bl = 2;
          $this->do_queue_buyer_time($bl);
-        
-        for ($i=0; $i < 3; $i++) { 
+
+        for ($i=0; $i < 3; $i++) {
             $table = model('food_shop_tables')->where(array('status'=>0))->select();
             if ($table) {
                 $this->do_queue_buyer_time($bl+1+$i);
             }
         }
-        
+
     }
     public function do_queue_buyer_time($bl)
     {
@@ -682,39 +696,39 @@ class index extends plugin
             foreach ($queues as $key => $vv) {
                 $sm = 100000000000;
                 $a = [];
-                
+
                 foreach ($tables as $k=> $v) {
-                    if ($v['store_id'] == $vv['store_id']) { 
+                    if ($v['store_id'] == $vv['store_id']) {
                         if ($v['user_count'] >= $vv['limit_num'] ) {
-                            $n = abs($v['user_count']-$vv['limit_num']); 
+                            $n = abs($v['user_count']-$vv['limit_num']);
                             if ($sm > $n && $n < $bl) {
                                 $sm = $n;
                                 $a['table'] = $v;
-                                $a['queue'] = $vv; 
-                            }       
-                        } 
-                    } 
+                                $a['queue'] = $vv;
+                            }
+                        }
+                    }
                 }
                 if (isset($a)) {
                     $aa[]=$a;
                 }
-               
+
             }
-                    
-        } 
+
+        }
 
         foreach ($aa as $kk => $vv) {
             $table_id = $vv['table']['id'];
             $queue_id = $vv['queue']['id'];
-            $buyer = model('food_queue_buyer')->where(array('status'=>1,'queue_id'=>$queue_id))->find(); 
+            $buyer = model('food_queue_buyer')->where(array('status'=>1,'queue_id'=>$queue_id))->find();
             //echo $table_id;
             $data['status'] = 2;
             $data['table_id'] = $table_id;
             if (model('food_queue_buyer')->data($data)->where(array('id'=>$buyer['id']))->save()) {
-                model('food_shop_tables')->data(array('status'=>1))->where(array('id'=>$table_id))->save(); 
+                model('food_shop_tables')->data(array('status'=>1))->where(array('id'=>$table_id))->save();
             }
 
 
-        }  
+        }
     }
 }
