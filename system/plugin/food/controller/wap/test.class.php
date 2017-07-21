@@ -56,5 +56,18 @@ class test extends plugin
 		 dump($user);
 	}
 
+	public function weixing()
+	{
+		//http://dc.com/?m=plugin&p=wap&cn=test&id=food:sit:weixin
+
+
+		if(!$_GET['userinfo']){
+			$url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+			$appid = 'LB06yeov34iw1vs9lo';
+         	$oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?appid_api='.$appid.'&redirect='.urlencode($url);
+        	header('Location: ' . $oaut_url);exit;
+		}
+	}
+
 	
 }
