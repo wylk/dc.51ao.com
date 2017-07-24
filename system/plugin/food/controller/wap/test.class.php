@@ -4,14 +4,14 @@ class test extends plugin
 	public function index()
 	{
 
-		/*$wx_user['appid'] = 'wxcf1349c1fd949597';
-		$wx_user['appSecret'] = '0d5e3d5ee7955e524088291d4fbe7546';
-		require_once(UPLOAD_PATH.'WxUserinfo.class.php');
-		$wxCardPack = new Wxcard($wx_user);
+		echo 1;die;
 		$url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		$info_arr = $wxCardPack->auth_openid($url);
-		dump($info_arr);*/	
-		$this->display('test-ucenter');
+		$appid = 'LB06yeov34iw1vs9lo';
+		$oaut_url = 'http://test.com?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
+		echo $oaut_url;die;
+	        	header('Location: ' . $oaut_url);exit;
+
+		//$this->display('test-ucenter');
 
 	}
 
@@ -93,6 +93,17 @@ class test extends plugin
         }
        dump($_SEEEION);
 		
+	}
+
+	public function do_test()
+	{
+
+		
+		$url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$appid = 'LB06yeov34iw1vs9lo';
+		$oaut_url = 'http://test.com/index.php?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
+	        	header('Location: ' . $oaut_url);exit;
+
 	}
 
 	

@@ -48,7 +48,7 @@ class index extends plugin
 
         }
 
-         dump($_SESSION);
+        // dump($_SESSION);
        /* if ($_SESSION['uid']) {
            $this->uid = $_SESSION['uid'];
         }*/
@@ -61,20 +61,6 @@ class index extends plugin
         //     echo "<script>alert('没有获取到桌号，请稍后再试');history.go(-1);</script>";
         //     die;
         // }
-    }
-    public function choose_table()
-    {
-        $data=$this->clear_html($_GET);
-        //手机端选桌子页面
-        $data1=model('food_shop_tables')->where(array('status'=>0,'shop_id'=>$data['shop_id']))->select();
-        // dump($data1);
-        // die;
-<<<<<<< HEAD
-        $this->assign(array('data1'=>$data1,'data'=>$data));
-=======
-        $this->assign(array('data1'=>$data1));
->>>>>>> 4e99921af139ae0da01234482be3c112be820404
-        $this->display('choose_table');
     }
     public function all_order()
     {
@@ -222,14 +208,12 @@ class index extends plugin
         $array_data = json_decode(json_encode(simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA)), true);
         if ($array_data['return_code'] == 'SUCCESS')
         {
-            // $result=model('food_order')->where(array('order_no'=>$array_data['out_trade_no']))->find();
+
+
             $result=model('food_order')->data(array('trade_no'=>$array_data['transaction_id'],'status'=>2,'paid_time'=>time()))->where(array('order_no'=>$array_data['out_trade_no']))->save();
             // //桌号状态改变
-            // $orderinfo=model('food_order')->where(array('table_id'=>$array_data['out_trade_no']))->find();
-
-            $tableinfo=model('food_shop_tables')->data(array('status'=>3))->where(array('id'=>$this->table_id))->save();
-            file_put_contents('./table_id.txt',$tableinfo);
-
+            $orderinfo=model('food_order')->where(array('order_no'=>$array_data['out_trade_no']))->find();
+            $tableinfo=model('food_shop_tables')->data(array('status'=>3))->where(array('id'=>$orderinfo['table_id']))->save();
             if($result && $tableinfo)
             {
                 file_put_contents('./2.txt','success');
@@ -299,11 +283,7 @@ class index extends plugin
 
         }
 
-        // echo $_SESSION['not_shop'];
-        // var_dump($return1);
-        // die;
-        // dump($_SESSION);
-        // echo $this->eid;
+
         if(IS_POST)
         {
             $data3=$this->clear_html($_POST);
@@ -406,40 +386,36 @@ class index extends plugin
 
          if(!$this->eid){
             if(!$_SESSION['userinfo'] || !$this->uid){
+                $wx_user['appid'] = 'wxcf1349c1fd949597';
+                $wx_user['appSecret'] = '0d5e3d5ee7955e524088291d4fbe7546';
                 $url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-                $appid = 'LB06yeov34iw1vs9lo';
-                if(empty($_GET['userinfo'])){
+                require_once(UPLOAD_PATH.'WxUserinfo.class.php');
+                $wxCardPack = new Wxcard($wx_user);
 
-                    if (isset($_GET['openid'])) {
-                        $user = uc_user_login_openid($_GET['openid']);
-                        if($user){
-                            $_SESSION['userinfo']['uid'] = $user['uid'];
-                            $_SESSION['userinfo']['openid'] = $user['openid'];
-                        }
-                    }else{
-                            $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?appid_api='.$appid.'&redirect='.urlencode($url);
-                            header('Location: ' . $oaut_url);exit;
-                    }
+                if (!$_SESSION['openid']) {
+                    $openids = $wxCardPack->one_openid($url);
+                    $_SESSION['openid'] = $openids['openid'];
+                    $openid = $_SESSION['openid'];
+                }else{
+                    $openid = $_SESSION['openid'];
+                }
+                $user = uc_user_login_openid($openid);
+                if($user){
+                    $_SESSION['userinfo']['uid'] = $user['uid'];
+                    $_SESSION['userinfo']['openid'] = $user['openid'];
                 }
 
-                if (!$user) {
-                    if(!$_GET['userinfo']){
-                        $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
-                        header('Location: ' . $oaut_url);exit;
-
-                    }else{
-                       $userinfo = json_decode(base64_decode($_GET['userinfo']), true);
-                       if($userinfo['nickname']){
-                            $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
-                            if ($id > 0) {
-                                $_SESSION['userinfo']['uid'] = $id;
-                                $_SESSION['userinfo']['openid'] = $userinfo['openid'];
-                            }
-                        }
+                if(!$user){
+                    $userinfo = $wxCardPack->auth_openid($url);
+                    if($userinfo['nickname']){
+                        $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
                     }
-                    
+                    if($id > 0){
+                        $_SESSION['userinfo']['uid'] = $id;
+                        $_SESSION['userinfo']['openid'] = $userinfo['openid'];
+                    }
+
                 }
-                dump($_SEEEION);die;
             }
         }
 
@@ -613,126 +589,6 @@ class index extends plugin
                     $this->dexit(array('error'=>1,'msg'=>'fail'));
                 }
             }
-        }
-    }
-
-    //排队 hd_food_queue_buyer
-    public function do_queue_buyer()
-    {
-        if (IS_POST) {
-            $data = $this->clear_html($_POST);
-            $data['store_id'] = $this->mid;
-            $data['u_id'] = 3;
-            $status = model('food_queue_buyer')->where(array('u_id'=>$data['u_id'],'status'=>1))->find();
-            if ($status) {
-               $this->dexit(array('error'=>1,'msg'=>'你已经排号成功了，不可再排号，取消可重新排号。。'));
-            }
-            $datas = model('food_queue_add_lin')->where(array('status'=>1,'store_id'=>$this->mid))->order('displayorder asc')->select();
-            $a = 100000000000;
-            $id = 0;
-            foreach ($datas as $v) {
-                if ($data['buyer_num'] >=  $v['limit_num']) {
-                    $b = abs($v['limit_num']-$data['buyer_num']);
-                    if ($a > $b) {
-                        $a  = $b;
-                        $id = $v[id];
-                    }
-
-                }
-            }
-            $data['queue_id'] = $id;
-            $data['add_time'] = time();
-            $todey = strtotime(date('Ymd'));
-            $buyer = model('food_queue_buyer')->where(array('status'=>1,'add_time'=>array('gt',$todey)))->order('buyer_id desc')->select();
-            if ($buyer) {
-               $data['buyer_id'] = $buyer[0]['buyer_id']+1;
-            }else{
-                $data['buyer_id'] = 10001;
-            }
-            $num = model('food_queue_buyer')->data($data)->add();
-            if ($num) {
-                $this->dexit(array('error'=>0,'msg'=>'你已经排号成功。。'));
-
-            }else{
-                $this->dexit(array('error'=>1,'msg'=>'你排号失败。。'));
-
-            }
-        }
-        $this->display('queue_buyer');
-    }
-
-     //显示排队位置
-    public function do_queue_buyer_show()
-    {
-        $u_id = 1;
-        $buyer = model('food_queue_buyer')->where(array('u_id'=>$u_id,))->find();
-        $queue = model('food_queue_add_lin')->where(array('id'=>$buyer['queue_id']))->find();
-        //
-        $buyers = model('food_queue_buyer')->where(array('queue_id'=>$buyer['queue_id'],'status'=>1))->order('add_time asc')->limit(0,$queue['notify_number'])->select();
-        //我这一组我排第几
-        $num = model('food_queue_buyer')->field('count(*) as num')->where(array('add_time'=>array('lt',$buyer['add_time'])))->find();
-        //dump($buyers);
-        //dump($num);
-        $this->assign(array('num'=>$num['num'],'buyers'=>$buyers,'buyer'=>$buyer));
-        $this->display('queue_buyer_show');
-    }
-    //排队定时任务
-    public function do_queue_buyer_times()
-    {
-        $bl = 2;
-         $this->do_queue_buyer_time($bl);
-
-        for ($i=0; $i < 3; $i++) {
-            $table = model('food_shop_tables')->where(array('status'=>0))->select();
-            if ($table) {
-                $this->do_queue_buyer_time($bl+1+$i);
-            }
-        }
-
-    }
-    public function do_queue_buyer_time($bl)
-    {
-        $queues = model('food_queue_add_lin')->where(array('status'=>1))->select();
-        $tables = model('food_shop_tables')->where(array('status'=>0))->select();
-        //limit_num user_count
-        $aa = [];
-        if ($tables) {
-            foreach ($queues as $key => $vv) {
-                $sm = 100000000000;
-                $a = [];
-
-                foreach ($tables as $k=> $v) {
-                    if ($v['store_id'] == $vv['store_id']) {
-                        if ($v['user_count'] >= $vv['limit_num'] ) {
-                            $n = abs($v['user_count']-$vv['limit_num']);
-                            if ($sm > $n && $n < $bl) {
-                                $sm = $n;
-                                $a['table'] = $v;
-                                $a['queue'] = $vv;
-                            }
-                        }
-                    }
-                }
-                if (isset($a)) {
-                    $aa[]=$a;
-                }
-
-            }
-
-        }
-
-        foreach ($aa as $kk => $vv) {
-            $table_id = $vv['table']['id'];
-            $queue_id = $vv['queue']['id'];
-            $buyer = model('food_queue_buyer')->where(array('status'=>1,'queue_id'=>$queue_id))->find();
-            //echo $table_id;
-            $data['status'] = 2;
-            $data['table_id'] = $table_id;
-            if (model('food_queue_buyer')->data($data)->where(array('id'=>$buyer['id']))->save()) {
-                model('food_shop_tables')->data(array('status'=>1))->where(array('id'=>$table_id))->save();
-            }
-
-
         }
     }
 }

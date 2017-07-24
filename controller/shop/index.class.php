@@ -44,171 +44,6 @@
     }
 
     }
-    public function test111()
-    {
-
-      $data=model('food_order')->field('status')->where(array('id'=>208))->find();
-      dump($data);
-    }
-    public function do_entrance_waiter()
-    {
-      dump($_SESSION);
-      //手机端
-      $data1=model('food_shop_tables')->where(array('status'=>0,'shop_id'=>$this->mid))->select();
-      $this->displays('choose_table',array('data1'=>$data1));
-    }
-    public function do_send_goods()
-    {
-      //出单
-      if(IS_POST)
-      {
-        $data=$this->clear_html($_POST);
-        // $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
-        //  $this->dexit(array('error'=>1,'msg'=>$data2));
-        //更改订单商品表状态
-        $data1=model('food_order_goods')->data(array('status'=>2))->where(array('id'=>$data['eid']))->save();
-        $data2=model('food_order')->where(array('id'=>$data['order_id']))->find();
-
-        //订单表状态改为已接单
-        if($data1)
-        {
-          if($data2['goods_num']==1)
-          {
-            //更改订单表状态
-            $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
-          }else
-          {
-            //商品数量大于2时，循环遍历所有的商品订单表 状态全部为2的更改订单表
-            $data3=model('food_order_goods')->where(array('order_id'=>$data['order_id'],'status'=>2))->count();
-            // $this->dexit(array('error'=>1,'msg'=>$data3));
-            if($data3==$data2['goods_num'])
-            {
-              //更改订单表状态
-              $data2=model('food_order')->data(array('print_status'=>3))->where(array('id'=>$data['order_id']))->save();
-            }
-          }
-        }
-
-        if($data1)
-        {
-
-            $this->dexit(array('error'=>0,'msg'=>'出单成功'));
-        }else
-        {
-            $this->dexit(array('error'=>1,'msg'=>'出单失败，请稍后再试'));
-        }
-      }
-
-    }
-    public function receive()
-    {
-      if(IS_POST)
-      {
-        $data=$this->clear_html($_POST);
-        // $this->dexit(array('error'=>1,'msg'=>$data['eid']));
-        //更改订单商品表状态
-        $data1=model('food_order_goods')->data(array('status'=>1))->where(array('id'=>$data['eid']))->save();
-        //订单表状态改为已接单
-        $data2=model('food_order')->data(array('print_status'=>2))->where(array('id'=>$data['order_id']))->save();
-        if($data1)
-        {
-
-            $this->dexit(array('error'=>0,'msg'=>'接单成功'));
-        }else
-        {
-            $this->dexit(array('error'=>1,'msg'=>'接单失败，请稍后再试'));
-        }
-      }
-    }
-    public function do_entrance_cook()
-    {
-
-       $role_id=$_SESSION['employee']['role_id'];
-       $data=model('store_role')->field('cat_id')->where(array('id'=>$role_id))->find();
-       $cat_id=explode(',', $data['cat_id']);
-       $cat_id_all=model('food_cat')->field('id')->where(array('shop_id'=>$this->mid))->select();
-       $cid_all=$this->arr2_arr1($cat_id_all,'id');
-
-        $data1=model('food_order')->query('select * from hd_food_order where status=2 and print_status in(0,1,2)');
-
-        foreach($data1 as $v)
-        {
-          $data1['test'][]=model('food_order_goods')->query('select a.*,b.goods_name,b.cat_id,b.goods_img from hd_food_order_goods as a  left join hd_food_goods as b on a.goods_id=b.id where a.order_id='.$v['id']);
-        }
-        $data2=[];
-        if($_SESSION['phone'] || $_SESSION['employee']['role_id']==0)
-        {
-
-            //店长或经理登录
-          foreach($data1['test'] as $v)
-          {
-              foreach($v  as $k => $v1)
-              {
-                  if(in_array($v1['cat_id'],$cid_all))
-                  {
-                      $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
-                  }
-              }
-          }
-        }elseif($_SESSION['employee']['role_id']!=0 && empty($_SESSION['cid']))
-        {
-            //员工登陆
-          foreach($data1['test'] as $v)
-          {
-              foreach($v  as $k => $v1)
-              {
-                  if(in_array($v1['cat_id'],$cat_id))
-                  {
-                      $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
-                  }
-              }
-          }
-        }
-        dump($data2);
-       $this->displays('do_entrance_cook',array('data2'=>$data2));
-    }
-  public function arr2_arr1($arrdata,$v)
-  {
-    $arrs = array();
-    foreach ($arrdata as $key => $value) {
-      $arrs[] = $value[$v];
-    }
-    return $arrs;
-  }
-    public function do_ntrance()
-    {
-       $_count=model('store_role')->where(array('store_id'=>$this->mid))->count();
-      require_once(UPLOAD_PATH.'common_page.class.php');
-      $p = new Page($_count, 10);
-      $pagebar = $p->show(10);
-        $role = model('store_role')->where(array('store_id'=>$this->mid))->limit($p->firstRow,$p->listRows)->select();
-        $this->displays('ntrance',array('role'=>$role,'pagebar'=>$pagebar));
-    }
-    public function edit_cat_id()
-    {
-      //分配商品分类权限
-      $role_id=$this->clear_html($_GET);
-
-      $data=model('food_cat')->where(array('shop_id'=>$this->mid))->select();
-      $cat_auth=model('store_role')->field('cat_id')->where(array('id'=>$role_id['role_id']))->find();
-      $cat_auth=explode(',',$cat_auth['cat_id']);
-
-      if(IS_POST)
-      {
-
-        $data=$this->clear_html($_POST);
-
-        $data1=model('store_role')->data(array('cat_id'=>$data['cat_id']))->where(array('id'=>$data['role_id']))->save();
-        if($data1)
-        {
-          $this->dexit(array('error'=>0,'msg'=>'操作成功'));
-        }else
-        {
-          $this->dexit(array('error'=>1,'msg'=>'操作失败'));
-        }
-      }
-      $this->displays('edit_cat_id',array('cat_auth'=>$cat_auth,'data'=>$data,'role_id'=>$role_id['role_id']));
-    }
     public function do_order_paid()
     {
       $data=model('food_order')->query('select a.*,b.title from hd_food_order as a left join hd_food_shop_tables as b on a.table_id=b.id where a.shop_id='.$this->mid.' and a.status=3');
@@ -698,7 +533,6 @@
             $data = $this->clear_html($_POST);
             $data['shop_id'] = $this->mid;
             $data['remark'] = '员工';
-            // $this->dexit(array('error'=>1,'msg'=>$data));
             $employee = model('employee')->where(array('truename'=>$data['truename'],'status'=>array('in','0,1')))->select();
             if ($employee) {
                $this->dexit(array('error'=>1,'msg'=>'真实姓名也存在'));
@@ -723,7 +557,7 @@
             $shop = model('shop')->where(array('id'=>$this->mid))->find();
             $data['company_id'] = $shop['company_id'];
             $uid = uc_user_register1($data['username'], $password, $data['email']);
-            if($uid > 1){
+            if($uid > 1){  
                 $data['uid'] = $uid;
                 if (model('employee')->data($data)->add()) {
                     $this->dexit(array('error'=>0,'msg'=>'添加成功'));
@@ -936,13 +770,6 @@
       $url='http://dc.51ao.com/?m=plugin&p=wap&cn=index&id=food:sit:test&table_id='.$table_id['table_id'].'&shop_id='.$this->mid.'&eid='.$_SESSION['employee']['id'];
       QRcode::png($url);
     }
-    public function test22()
-    {
-      //大厅上的二维码
-      require_once(UPLOAD_PATH.'phpqrcode.php');
-       $url='http://dc.com/?m=plugin&p=wap&cn=index&id=food:sit:choose_table&shop_id='.$this->mid;
-      QRcode::png($url);
-    }
     //添加餐桌
     public function do_shop_table_add()
     {
@@ -955,7 +782,7 @@
             $data['dateline'] = time();
             $return=model('food_shop_tables')->data($data)->add();
             if ($return) {
-                $url='http://dc.com/index.php?m=plugin&p=shop&cn=index&id=food:sit:test11&table_id='.$return;
+                $url='http://dc.51ao.com/index.php?m=plugin&p=shop&cn=index&id=food:sit:test11&table_id='.$return;
                 $table_url=model('food_shop_tables')->data(array('url'=>$url))->where(array('id'=>$return))->save();
                 if($table_url)
                 {
@@ -1092,76 +919,12 @@
 
     }
 
-     //排队管理
+    //排队管理
     public function do_shop_queue()
     {
-        $datas = model('food_queue_add_lin')->where(array('store_id'=>$this->mid))->order('displayorder asc')->select();
-        $this->displays('shop/shop_queue',['datas'=>$datas]);
+        $this->displays('shop/shop_queue');
 
-    }
 
-    //新建队列设置
-    public function do_shop_queue_add()
-    {
-        if (IS_POST) {
-            $data = $this->clear_html($_POST);
-            $data['store_id'] = $this->mid;
-            if (model('food_queue_add_lin')->data($data)->add()) {
-                $this->dexit(array('error'=>0,'msg'=>'添加成功'));
-                
-            }else{
-                $this->dexit(array('error'=>1,'msg'=>'添加失败'));
-                
-            }
-
-        }
-        $this->displays('shop/shop_queue_add');
-    }
-
-     //修改队列设置
-    public function do_shop_queue_edit()
-    {
-        if (IS_POST) {
-            $data = $this->clear_html($_POST);
-            $id = $data['edit_id'];
-            unset($data['edit_id']);
-            $data['store_id'] = $this->mid;
-            
-            if (model('food_queue_add_lin')->data($data)->where(array('id'=>$id,'store_id'=>$this->mid))->save()) {
-                $this->dexit(array('error'=>0,'msg'=>'修改成功'));
-                
-            }else{
-                $this->dexit(array('error'=>1,'msg'=>'修改失败'));
-                
-            }
-
-        }
-
-        $id = $this->clear_html($_GET['edit_id']);
-        $data = model('food_queue_add_lin')->where(array('store_id'=>$this->mid,'id'=>$id))->find();
-        $this->displays('shop/shop_queue_edit',['data'=>$data]);
-    }
-    //修改队列删除
-    public function do_shop_queue_del()
-    {
-        $id = $this->clear_html($_GET['del_id']);
-        if (model('food_queue_add_lin')->where(array('id'=>$id))->delete()) {
-            $this->dexit(array('error'=>0,'msg'=>'删除成功'));
-        }else{
-            $this->dexit(array('error'=>1,'msg'=>'删除失败'));
-        }
-
-    }
-
-    //客人队列
-    public function do_shop_queue_buyer()
-    {
-        $datas = model('food_queue_add_lin')->where(array('status'=>1,'store_id'=>$this->mid))->order('displayorder asc')->select();
-        foreach ($datas as $key => &$v) {
-            $num = model('food_queue_buyer')->field('count(*) as num')->where(array('queue_id'=>$v['id'],'status'=>1))->find();
-            $v['num'] = $num['num'];
-        }
-        $this->displays('shop/shop_queue_buyer',['datas'=>$datas]);
     }
 
     //预定管理
