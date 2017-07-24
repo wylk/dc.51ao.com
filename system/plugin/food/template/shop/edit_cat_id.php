@@ -24,7 +24,16 @@
                             <div class="col-md-12 field-box">
                                <div class="checkbox">
                                   <label>
-                                    <input type="checkbox" name="cat_id" value="<?php echo $v['id']?>"><?php echo $v['cat_name']?>
+                                  <?php
+                                    if(in_array($v['id'],$cat_auth))
+                                    {
+                                        $checked='checked="checked"';
+                                    }else
+                                    {
+                                        $checked='';
+                                    }
+                                  ?>
+                                    <input type="checkbox" name="cat_id" value="<?php echo $v['id']?>" <?php echo $checked;?>><?php echo $v['cat_name']?>
                                   </label>
                                 </div>
                                 </div>

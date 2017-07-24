@@ -2,7 +2,7 @@
     <!-- end navbar -->
 <!-- libraries -->
     <link rel="stylesheet" type="text/css" href="<?php echo FOOD_PATH;?>css/lib/font-awesome.css">
-    
+
     <!-- this page specific styles -->
     <link rel="stylesheet" href="<?php echo FOOD_PATH;?>css/compiled/new-user.css" type="text/css" media="screen" />
     <!-- sidebar -->
@@ -10,15 +10,15 @@
     <!-- end sidebar -->
     <!-- main container -->
     <div class="content">
-        
+
         <!-- settings changer -->
-        
-        
+
+
         <div id="pad-wrapper" class="new-user">
             <div class="row header">
                 <div class="col-md-12">
                     <h3 style="    margin-left: 95px;">添加员工</h3>
-                </div>                
+                </div>
             </div>
 
             <div class="row form-wrapper">
@@ -35,9 +35,9 @@
                                 <div class="ui-select span5">
                                     <select id="role_id">
                                      <?php foreach ($roles as $key => $v) {?>
-                                        
+
                                         <option value="<?php echo $v['id'];?>"><?php echo $v['role_name'];?></option>
-                                        
+
                                         <?php }?>
                                     </select>
                                 </div>
@@ -66,13 +66,13 @@
                                 <label>是否开启</label>&nbsp;
                                 开启：<input  type="radio" name="status" checked="checked" value="0"/> &nbsp;&nbsp;关闭：<input  type="radio" name="status" value='1'/>
                             </div>
-                            
+
                             <div class="col-md-11 field-box actions" style="text-align: center;">
                                 <input type="button" class="btn-glow default" value="提交" id="add" style="width: 13%;">
                             </div>
                         </form>
                     </div>
-                </div>  
+                </div>
             </div>
         </div>
     </div>
@@ -93,20 +93,20 @@
               var password2 = $('#password2').val();
               var phone = $('#phone').val();
               var email = $('#email').val();
-              
-              var regex = new RegExp("^([\u4E00-\uFA29]|[\uE7C7-\uE7F3]|[a-zA-Z0-9_]){1,10}$"); 
-              
+
+              var regex = new RegExp("^([\u4E00-\uFA29]|[\uE7C7-\uE7F3]|[a-zA-Z0-9_]){1,10}$");
+
               if (!regex.test(truename) || truename.length<1) {
                     alert('输入的真实姓名格式不对，请重新输入');return false;
               }
               if (truename.length<2) {
                     alert('输入的真实姓名不能少于2个字符，请重新输入');return false;
-              } 
+              }
               if (username.length < 6) {
                     alert('输入的登录账号不能少于6个字符，请重新输入');return false;
               }
               if (password1 != password2) {
-                     alert('输入的密码不一致，请重新输入');return false;  
+                     alert('输入的密码不一致，请重新输入');return false;
               }
               if (password1.length < 6) {
                     alert('输入的登录密码不能少于6个字符，请重新输入');return false;
@@ -137,12 +137,13 @@
 
                     },2000);
                 }else{
-                    alert(re.msg);
+                    // alert(re.msg);
+                    console.log(re.msg);
                 }
 
              },'json');
             });
-           
+
         });
     </script>
 </body>

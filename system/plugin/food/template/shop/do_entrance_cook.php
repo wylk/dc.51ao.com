@@ -24,6 +24,9 @@
                                 <th class="col-md-3 sortable ">
                                     <span class="line"></span>商品数量
                                 </th>
+                                 <th class="col-md-3 sortable ">
+                                    <span class="line"></span>
+                                </th>
 
                                 <th class="col-md-3 sortable ">
                                     <span class="line"></span>操作

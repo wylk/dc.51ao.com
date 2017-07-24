@@ -159,15 +159,21 @@ class index1 extends plugin
         if(IS_POST)
         {
             $data=$this->clear_html($_POST);
+            $password=$data['password'];
             $data['add_time']=time();
             $data['company_id']=$cid;
-            $data1=model('shop')->data($data)->add();
-            if($data1)
-            {
-                $this->dexit(array('error'=>0,'msg'=>'创建成功'));
-            }else
-            {
+            $uid = uc_user_register1($data['username'], $password, $data['email']);
+            if($uid > 1){
+            $data['uid'] = $uid;
+                // $this->dexit(array('error'=>1,'msg'=>$data1));
+                if (model('employee')->data($data1)->add()) {
+                    $this->dexit(array('error'=>0,'msg'=>'店长账号创建成功'));
+                }else{
+                    $this->dexit(array('error'=>1,'msg'=>'创建失败，请稍后再试'));
+                }
+            }else{
                 $this->dexit(array('error'=>1,'msg'=>'创建失败，请稍后再试'));
+
             }
         }
         $this->assign('data',$data);

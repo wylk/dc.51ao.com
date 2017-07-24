@@ -44,7 +44,20 @@
     }
 
     }
-     public function do_send_goods()
+    public function test111()
+    {
+
+      $data=model('food_order')->field('status')->where(array('id'=>208))->find();
+      dump($data);
+    }
+    public function do_entrance_waiter()
+    {
+      dump($_SESSION);
+      //手机端
+      $data1=model('food_shop_tables')->where(array('status'=>0,'shop_id'=>$this->mid))->select();
+      $this->displays('choose_table',array('data1'=>$data1));
+    }
+    public function do_send_goods()
     {
       //出单
       if(IS_POST)
@@ -109,33 +122,59 @@
     }
     public function do_entrance_cook()
     {
+
        $role_id=$_SESSION['employee']['role_id'];
        $data=model('store_role')->field('cat_id')->where(array('id'=>$role_id))->find();
        $cat_id=explode(',', $data['cat_id']);
-       // dump($cat_id);
-       // die;
-        //dump($data);
+       $cat_id_all=model('food_cat')->field('id')->where(array('shop_id'=>$this->mid))->select();
+       $cid_all=$this->arr2_arr1($cat_id_all,'id');
+
         $data1=model('food_order')->query('select * from hd_food_order where status=2 and print_status in(0,1,2)');
-        // where(array('status'=>2,'print_status'=>0))->select();
+
         foreach($data1 as $v)
         {
           $data1['test'][]=model('food_order_goods')->query('select a.*,b.goods_name,b.cat_id,b.goods_img from hd_food_order_goods as a  left join hd_food_goods as b on a.goods_id=b.id where a.order_id='.$v['id']);
         }
         $data2=[];
-        foreach($data1['test'] as $v)
+        if($_SESSION['phone'] || $_SESSION['employee']['role_id']==0)
         {
-            foreach($v  as $k => $v1)
-            {
-                if(in_array($v1['cat_id'],$cat_id))
-                {
-                    $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
-                }
-            }
+
+            //店长或经理登录
+          foreach($data1['test'] as $v)
+          {
+              foreach($v  as $k => $v1)
+              {
+                  if(in_array($v1['cat_id'],$cid_all))
+                  {
+                      $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
+                  }
+              }
+          }
+        }elseif($_SESSION['employee']['role_id']!=0 && empty($_SESSION['cid']))
+        {
+            //员工登陆
+          foreach($data1['test'] as $v)
+          {
+              foreach($v  as $k => $v1)
+              {
+                  if(in_array($v1['cat_id'],$cat_id))
+                  {
+                      $data2[]=array('goods_id'=>$v1['goods_id'],'goods_num'=>$v1['goods_num'],'goods_name'=>$v1['goods_name'],'goods_img'=>$v1['goods_img'],'order_id'=>$v1['order_id'],'id'=>$v1['id'],'status'=>$v1['status']);
+                  }
+              }
+          }
         }
-             // $goods_id=implode(',',$data2);
         dump($data2);
        $this->displays('do_entrance_cook',array('data2'=>$data2));
     }
+  public function arr2_arr1($arrdata,$v)
+  {
+    $arrs = array();
+    foreach ($arrdata as $key => $value) {
+      $arrs[] = $value[$v];
+    }
+    return $arrs;
+  }
     public function do_ntrance()
     {
        $_count=model('store_role')->where(array('store_id'=>$this->mid))->count();
@@ -149,9 +188,10 @@
     {
       //分配商品分类权限
       $role_id=$this->clear_html($_GET);
-      // var_dump($eid['employee_id']);
-      // die;
+
       $data=model('food_cat')->where(array('shop_id'=>$this->mid))->select();
+      $cat_auth=model('store_role')->field('cat_id')->where(array('id'=>$role_id['role_id']))->find();
+      $cat_auth=explode(',',$cat_auth['cat_id']);
 
       if(IS_POST)
       {
@@ -167,7 +207,7 @@
           $this->dexit(array('error'=>1,'msg'=>'操作失败'));
         }
       }
-      $this->displays('edit_cat_id',array('data'=>$data,'role_id'=>$role_id['role_id']));
+      $this->displays('edit_cat_id',array('cat_auth'=>$cat_auth,'data'=>$data,'role_id'=>$role_id['role_id']));
     }
     public function do_order_paid()
     {
@@ -658,6 +698,7 @@
             $data = $this->clear_html($_POST);
             $data['shop_id'] = $this->mid;
             $data['remark'] = '员工';
+            // $this->dexit(array('error'=>1,'msg'=>$data));
             $employee = model('employee')->where(array('truename'=>$data['truename'],'status'=>array('in','0,1')))->select();
             if ($employee) {
                $this->dexit(array('error'=>1,'msg'=>'真实姓名也存在'));
@@ -895,6 +936,13 @@
       $url='http://dc.51ao.com/?m=plugin&p=wap&cn=index&id=food:sit:test&table_id='.$table_id['table_id'].'&shop_id='.$this->mid.'&eid='.$_SESSION['employee']['id'];
       QRcode::png($url);
     }
+    public function test22()
+    {
+      //大厅上的二维码
+      require_once(UPLOAD_PATH.'phpqrcode.php');
+       $url='http://dc.com/?m=plugin&p=wap&cn=index&id=food:sit:choose_table&shop_id='.$this->mid;
+      QRcode::png($url);
+    }
     //添加餐桌
     public function do_shop_table_add()
     {
@@ -907,7 +955,7 @@
             $data['dateline'] = time();
             $return=model('food_shop_tables')->data($data)->add();
             if ($return) {
-                $url='http://dc.51ao.com/index.php?m=plugin&p=shop&cn=index&id=food:sit:test11&table_id='.$return;
+                $url='http://dc.com/index.php?m=plugin&p=shop&cn=index&id=food:sit:test11&table_id='.$return;
                 $table_url=model('food_shop_tables')->data(array('url'=>$url))->where(array('id'=>$return))->save();
                 if($table_url)
                 {
