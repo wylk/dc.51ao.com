@@ -56,5 +56,44 @@ class test extends plugin
 		 dump($user);
 	}
 
+	public function weixing()
+	{
+		$url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$appid = 'LB06yeov34iw1vs9lo';
+		if(empty($_GET['userinfo'])){
+
+	        if (isset($_GET['openid'])) {
+	        	$user = uc_user_login_openid($_GET['openid']);
+	        	if($user){
+                    $_SESSION['userinfo']['uid'] = $user['uid'];
+                    $_SESSION['userinfo']['openid'] = $user['openid'];
+                }
+	        }else{
+		         	$oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?appid_api='.$appid.'&redirect='.urlencode($url);
+		        	header('Location: ' . $oaut_url);exit;
+	        }
+		}
+
+        if (!$user) {
+	        if(!$_GET['userinfo']){
+	        	$oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
+	        	header('Location: ' . $oaut_url);exit;
+
+	        }else{
+               $userinfo = json_decode(base64_decode($_GET['userinfo']), true);
+               if($userinfo['nickname']){
+                    $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
+                    if ($id > 0) {
+                    	$_SESSION['userinfo']['uid'] = $id;
+                        $_SESSION['userinfo']['openid'] = $userinfo['openid'];
+                    }
+                }
+	        }
+        	
+        }
+       dump($_SEEEION);
+		
+	}
+
 	
 }

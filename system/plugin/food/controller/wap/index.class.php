@@ -48,7 +48,7 @@ class index extends plugin
 
         }
 
-        // dump($_SESSION);
+         dump($_SESSION);
        /* if ($_SESSION['uid']) {
            $this->uid = $_SESSION['uid'];
         }*/
@@ -69,7 +69,11 @@ class index extends plugin
         $data1=model('food_shop_tables')->where(array('status'=>0,'shop_id'=>$data['shop_id']))->select();
         // dump($data1);
         // die;
+<<<<<<< HEAD
         $this->assign(array('data1'=>$data1,'data'=>$data));
+=======
+        $this->assign(array('data1'=>$data1));
+>>>>>>> 4e99921af139ae0da01234482be3c112be820404
         $this->display('choose_table');
     }
     public function all_order()
@@ -402,36 +406,40 @@ class index extends plugin
 
          if(!$this->eid){
             if(!$_SESSION['userinfo'] || !$this->uid){
-                $wx_user['appid'] = 'wxcf1349c1fd949597';
-                $wx_user['appSecret'] = '0d5e3d5ee7955e524088291d4fbe7546';
                 $url = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-                require_once(UPLOAD_PATH.'WxUserinfo.class.php');
-                $wxCardPack = new Wxcard($wx_user);
+                $appid = 'LB06yeov34iw1vs9lo';
+                if(empty($_GET['userinfo'])){
 
-                if (!$_SESSION['openid']) {
-                    $openids = $wxCardPack->one_openid($url);
-                    $_SESSION['openid'] = $openids['openid'];
-                    $openid = $_SESSION['openid'];
-                }else{
-                    $openid = $_SESSION['openid'];
-                }
-                $user = uc_user_login_openid($openid);
-                if($user){
-                    $_SESSION['userinfo']['uid'] = $user['uid'];
-                    $_SESSION['userinfo']['openid'] = $user['openid'];
-                }
-
-                if(!$user){
-                    $userinfo = $wxCardPack->auth_openid($url);
-                    if($userinfo['nickname']){
-                        $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
+                    if (isset($_GET['openid'])) {
+                        $user = uc_user_login_openid($_GET['openid']);
+                        if($user){
+                            $_SESSION['userinfo']['uid'] = $user['uid'];
+                            $_SESSION['userinfo']['openid'] = $user['openid'];
+                        }
+                    }else{
+                            $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?appid_api='.$appid.'&redirect='.urlencode($url);
+                            header('Location: ' . $oaut_url);exit;
                     }
-                    if($id > 0){
-                        $_SESSION['userinfo']['uid'] = $id;
-                        $_SESSION['userinfo']['openid'] = $userinfo['openid'];
-                    }
-
                 }
+
+                if (!$user) {
+                    if(!$_GET['userinfo']){
+                        $oaut_url = 'https://lepay.51ao.com/pay/api/openid.php?code=userinfo&appid_api='.$appid.'&redirect='.urlencode($url);
+                        header('Location: ' . $oaut_url);exit;
+
+                    }else{
+                       $userinfo = json_decode(base64_decode($_GET['userinfo']), true);
+                       if($userinfo['nickname']){
+                            $id = uc_user_register($userinfo['nickname'],$userinfo['openid'],$userinfo['headimgurl']);
+                            if ($id > 0) {
+                                $_SESSION['userinfo']['uid'] = $id;
+                                $_SESSION['userinfo']['openid'] = $userinfo['openid'];
+                            }
+                        }
+                    }
+                    
+                }
+                dump($_SEEEION);
             }
         }
 
